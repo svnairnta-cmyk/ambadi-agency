@@ -31,7 +31,7 @@ YOUR_UPI_ID = "svnairnta-1@oksbi"
 YOUR_NAME = "Ambay Agency"
 
 def make_upi_qr(amount):
-    upi_link = f"upi://pay?pa={YOUR_UPI_ID}&pn={YOUR_NAME}&am={amount:.2f}&cu=INR"
+    upi_link = "upi://pay?pa=" + YOUR_UPI_ID + "&pn=" + YOUR_NAME + "&am=" + str(round(amount, 2)) + "&cu=INR"
     qr = qrcode.QRCode(box_size=8, border=2)
     qr.add_data(upi_link)
     qr.make(fit=True)
@@ -51,30 +51,30 @@ def make_pdf(bill_no, customer, staff, cart, subtotal, total_gst, grand, date_st
     right_style = ParagraphStyle('R', parent=styles['Normal'], fontSize=10, alignment=TA_RIGHT, spaceAfter=2)
     story = []
     story.append(Paragraph(SHOP_NAME, title_style))
-    story.append(Paragraph(f"{SHOP_ADDRESS}", center_style))
-    story.append(Paragraph(f"Ph: {SHOP_PHONE} | GSTIN: {SHOP_GSTIN}", center_style))
+    story.append(Paragraph(SHOP_ADDRESS, center_style))
+    story.append(Paragraph("Ph: " + SHOP_PHONE + " | GSTIN: " + SHOP_GSTIN, center_style))
     story.append(Paragraph("TAX INVOICE", ParagraphStyle('Tax', parent=center_style, fontName='Helvetica-Bold', fontSize=11)))
     story.append(Paragraph("----------------------------------------------", center_style))
-    story.append(Paragraph(f"<b>Bill No:</b> {bill_no} &nbsp;&nbsp; <b>Date:</b> {date_str}", normal))
-    story.append(Paragraph(f"<b>Customer:</b> {customer}", normal))
-    story.append(Paragraph(f"<b>Billed By:</b> {staff} &nbsp;&nbsp; <b>Payment:</b> {payment_mode}", normal))
+    story.append(Paragraph("<b>Bill No:</b> " + bill_no + " | <b>Date:</b> " + date_str, normal))
+    story.append(Paragraph("<b>Customer:</b> " + customer, normal))
+    story.append(Paragraph("<b>Billed By:</b> " + staff + " | <b>Payment:</b> " + payment_mode, normal))
     story.append(Spacer(1, 4))
     data = [["#", "Item", "Size", "Qty", "Price", "Total"]]
     for i, it in enumerate(cart, 1):
-        data.append([str(i), it['item'], it['size'], f"{it['qty']} {it['unit']}", f"{it['price']:.2f}", f"{it['total']:.2f}"])
+        data.append([str(i), it['item'], it['size'], str(it['qty']) + " " + it['unit'], str(round(it['price'], 2)), str(round(it['total'], 2))])
     t = Table(data, colWidths=[18, 130, 60, 50, 60, 65])
-    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#1f4e79')),('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),('GRID',(0,0),(-1,-1),0.5,colors.grey),('FONTSIZE',(0,0),(-1,-1),8.5),('BOTTOMPADDING',(0,0),(-1,-1),5),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor('#EAF2F8')])]))
+    t.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f4e79')), ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke), ('GRID', (0, 0), (-1, -1), 0.5, colors.grey), ('FONTSIZE', (0, 0), (-1, -1), 8.5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5), ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#EAF2F8')])]))
     story.append(t)
-    story.append(Spacer(1,6))
-    story.append(Paragraph(f"Sub Total: Rs. {subtotal:,.2f}", right_style))
-    story.append(Paragraph(f"CGST (9%): Rs. {total_gst/2:,.2f}", right_style))
-    story.append(Paragraph(f"SGST (9%): Rs. {total_gst/2:,.2f}", right_style))
-    story.append(Paragraph(f"Total GST: Rs. {total_gst:,.2f}", right_style))
-    story.append(Paragraph(f"<b>Grand Total: Rs. {grand:,.2f}</b>", ParagraphStyle('BR', parent=right_style, fontName='Helvetica-Bold', fontSize=12)))
-    story.append(Paragraph(f"Paid By: {payment_mode}", right_style))
-    story.append(Spacer(1,8))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Sub Total: Rs. " + str(round(subtotal, 2)), right_style))
+    story.append(Paragraph("CGST: Rs. " + str(round(total_gst / 2, 2)), right_style))
+    story.append(Paragraph("SGST: Rs. " + str(round(total_gst / 2, 2)), right_style))
+    story.append(Paragraph("Total GST: Rs. " + str(round(total_gst, 2)), right_style))
+    story.append(Paragraph("<b>Grand Total: Rs. " + str(round(grand, 2)) + "</b>", ParagraphStyle('BR', parent=right_style, fontName='Helvetica-Bold', fontSize=12)))
+    story.append(Paragraph("Paid By: " + payment_mode, right_style))
+    story.append(Spacer(1, 8))
     story.append(Paragraph("Thank You! Visit Again", center_style))
-    story.append(Paragraph(f"{SHOP_NAME} - {SHOP_PHONE}", center_style))
+    story.append(Paragraph(SHOP_NAME + " - " + SHOP_PHONE, center_style))
     doc.build(story)
     buffer.seek(0)
     return buffer
@@ -126,24 +126,34 @@ for cat, name, size, color, gsm, unit, qty, price, gst in tarpaulin_stock:
 
 def get_today_summary():
     today_str = datetime.now().strftime("%Y-%m-%d")
-    df_sales = pd.read_sql_query("SELECT payment_mode, total_price FROM sales WHERE date LIKE ?", conn, params=(f"{today_str}%",))
-    cash = df_sales[df_sales['payment_mode']=='Cash']['total_price'].sum() if not df_sales.empty else 0
-    upi = df_sales[df_sales['payment_mode']=='UPI']['total_price'].sum() if not df_sales.empty else 0
-    card = df_sales[df_sales['payment_mode']=='Card']['total_price'].sum() if not df_sales.empty else 0
-    credit = df_sales[df_sales['payment_mode']=='Credit']['total_price'].sum() if not df_sales.empty else 0
-    total_sale = df_sales['total_price'].sum() if not df_sales.empty else 0
-    df_exp = pd.read_sql_query("SELECT amount, payment_from FROM expenses WHERE date LIKE ?", conn, params=(f"{today_str}%",))
-    total_exp = df_exp['amount'].sum() if not df_exp.empty else 0
-    exp_cash = df_exp[df_exp['payment_from']=='Cash']['amount'].sum() if not df_exp.empty else 0
-    exp_upi = df_exp[df_exp['payment_from']=='UPI']['amount'].sum() if not df_exp.empty else 0
+    df_sales = pd.read_sql_query("SELECT payment_mode, total_price FROM sales WHERE date LIKE ?", conn, params=(today_str + "%",))
+    cash = 0
+    upi = 0
+    card = 0
+    credit = 0
+    total_sale = 0
+    if not df_sales.empty:
+        cash = df_sales[df_sales['payment_mode'] == 'Cash']['total_price'].sum()
+        upi = df_sales[df_sales['payment_mode'] == 'UPI']['total_price'].sum()
+        card = df_sales[df_sales['payment_mode'] == 'Card']['total_price'].sum()
+        credit = df_sales[df_sales['payment_mode'] == 'Credit']['total_price'].sum()
+        total_sale = df_sales['total_price'].sum()
+    df_exp = pd.read_sql_query("SELECT amount, payment_from FROM expenses WHERE date LIKE ?", conn, params=(today_str + "%",))
+    total_exp = 0
+    exp_cash = 0
+    exp_upi = 0
+    if not df_exp.empty:
+        total_exp = df_exp['amount'].sum()
+        exp_cash = df_exp[df_exp['payment_from'] == 'Cash']['amount'].sum()
+        exp_upi = df_exp[df_exp['payment_from'] == 'UPI']['amount'].sum()
     cash_bal = cash - exp_cash
     upi_bal = upi - exp_upi
     balance = total_sale - total_exp
     return cash, upi, card, credit, total_sale, total_exp, cash_bal, upi_bal, balance
 
 st.set_page_config(page_title="Ambay Agency - Billing", layout="wide")
-st.title("⛺ AMBAY AGENCY - Olathanni, Neyyattinkara")
-st.caption(f"Ph: {SHOP_PHONE} | GSTIN: {SHOP_GSTIN} | UPI: {YOUR_UPI_ID}")
+st.title("AMBAY AGENCY - Olathanni, Neyyattinkara")
+st.caption("Ph: " + SHOP_PHONE + " | GSTIN: " + SHOP_GSTIN + " | UPI: " + YOUR_UPI_ID)
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -153,11 +163,11 @@ if 'logged_in' not in st.session_state:
     st.session_state['last_bill'] = None
 
 if not st.session_state['logged_in']:
-    st.subheader("🔑 ലോഗിൻ - 5 പേർക്ക്")
-    st.info("owner / owner123  |  staff1 / staff123  |  staff2 / staff123  |  staff3 / staff123  |  staff4 / staff123")
-    u = st.text_input("യൂസർനെയിം")
-    p = st.text_input("പാസ്‌വേഡ്", type="password")
-    if st.button("ലോഗിൻ ചെയ്യുക"):
+    st.subheader("Login - 5 Perukku")
+    st.info("owner / owner123 | staff1 / staff123 | staff2 / staff123 | staff3 / staff123 | staff4 / staff123")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
+    if st.button("Login Cheyyuka"):
         c.execute("SELECT username, name FROM users WHERE username=? AND password=?", (u, hash_pass(p)))
         row = c.fetchone()
         if row:
@@ -166,45 +176,54 @@ if not st.session_state['logged_in']:
             st.session_state['name'] = row[1]
             st.rerun()
         else:
-            st.error("തെറ്റായ യൂസർനെയിം / പാസ്‌വേഡ്")
+            st.error("Thattaya Username / Password")
 else:
-    st.sidebar.write(f"👤 {st.session_state['name']} | 🟢 ലൈവ്")
-    st.sidebar.write(f"{SHOP_NAME}\n{SHOP_ADDRESS}")
-    if st.sidebar.button("ലോഗ് ഔട്ട്"):
+    st.sidebar.write("User: " + st.session_state['name'])
+    if st.sidebar.button("Log Out"):
         st.session_state['logged_in'] = False
         st.session_state['cart'] = []
         st.rerun()
     cash, upi, card, credit, total_sale, total_exp, cash_bal, upi_bal, balance = get_today_summary()
-    st.subheader(f"📅 ഇന്ന് - {datetime.now().strftime('%d-%m-%Y')}")
+    st.subheader("Innu - " + datetime.now().strftime('%d-%m-%Y'))
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("💵 Cash", f"₹{cash_bal:,.0f}", f"വിൽപ്പന ₹{cash:,.0f}")
-    c2.metric("📱 【entity-GPay¦canonical_name=GPay】 / UPI", f"₹{upi_bal:,.0f}", f"വിൽപ്പന ₹{upi:,.0f}")
-    c3.metric("💳 Card", f"₹{card:,.0f}")
-    c4.metric("📒 കടം", f"₹{credit:,.0f}")
-    c5.metric("🧾 Expense", f"₹{total_exp:,.0f}", delta=f"-₹{total_exp:,.0f}", delta_color="inverse")
-    c6.metric("💰 Balance", f"₹{balance:,.2f}", f"ആകെ ₹{total_sale:,.0f}")
+    c1.metric("Cash", str(round(cash_bal)))
+    c2.metric("【entity-GPay¦canonical_name=GPay】 / UPI", str(round(upi_bal)))
+    c3.metric("Card", str(round(card)))
+    c4.metric("Kadam", str(round(credit)))
+    c5.metric("Expense", str(round(total_exp)))
+    c6.metric("Balance", str(round(balance, 2)))
     st.divider()
     if st.session_state['username'] == "owner":
-        menu = ["🧾 ബില്ലിംഗ്", "📦 സ്റ്റോക്ക് ലിസ്റ്റ്", "➕ സ്റ്റോക്ക് ചേർക്കുക", "🧾 ചെലവ് ചേർക്കുക", "📈 റിപ്പോർട്ട്", "👤 യൂസർ മാനേജ്"]
+        menu = ["Billing", "Stock List", "Stock Cherkkuka", "Chelavu Cherkkuka", "Report", "User Manage"]
     else:
-        menu = ["🧾 ബില്ലിംഗ്", "📦 സ്റ്റോക്ക് ലിസ്റ്റ്", "➕ സ്റ്റോക്ക് ചേർക്കുക", "🧾 ചെലവ് ചേർക്കുക", "📈 റിപ്പോർട്ട്"]
-    choice = st.sidebar.selectbox("മെനു", menu)
-    if choice == "🧾 ബില്ലിംഗ്":
-        st.subheader("🧾 പുതിയ ബിൽ")
-        customer = st.text_input("കസ്റ്റമർ പേര് / ഫോൺ", placeholder="ഉദാ: രാജേഷ് - 98955...")
+        menu = ["Billing", "Stock List", "Stock Cherkkuka", "Chelavu Cherkkuka", "Report"]
+    choice = st.sidebar.selectbox("Menu", menu)
+    if choice == "Billing":
+        st.subheader("Puthiya Bill")
+        customer = st.text_input("Customer Peru / Phone")
         c.execute("SELECT item_name FROM stock WHERE quantity > 0 ORDER BY item_name")
         items = [r[0] for r in c.fetchall()]
         if items:
-            sel = st.selectbox("ടാർപ്പോളിൻ തിരഞ്ഞെടുക്കുക", items)
+            sel = st.selectbox("Tarpaulin Thiranjedukkuka", items)
             c.execute("SELECT quantity, price, unit, size, gst FROM stock WHERE item_name=?", (sel,))
             avail, price, unit, size, gst_per = c.fetchone()
-            st.write(f"സ്റ്റോക്കിൽ ഉള്ളത്: **{avail} {unit}** | സൈസ്: **{size}** | വില: **₹{price}** | GST: **{gst_per}%**")
-            qty = st.number_input(f"അളവ് ({unit})", min_value=0.5, max_value=float(avail), value=1.0)
-            base = qty*price
-            gst_amt = base*gst_per/100
-            total = base+gst_amt
-            st.write(f"GST: ₹{gst_amt:.2f} | ആകെ: **₹{total:.2f}**")
-            if st.button("കാർട്ടിലേക്ക് ചേർക്കുക"):
+            st.write("Stockil Ullathu:")
+            st.write(avail)
+            st.write("Size:")
+            st.write(size)
+            st.write("Vila:")
+            st.write(price)
+            st.write("GST:")
+            st.write(gst_per)
+            qty = st.number_input("Alavu", min_value=0.5, max_value=float(avail), value=1.0)
+            base = qty * price
+            gst_amt = base * gst_per / 100
+            total = base + gst_amt
+            st.write("GST Amount:")
+            st.write(gst_amt)
+            st.write("Aake:")
+            st.write(total)
+            if st.button("Cartilekku Cherkkuka"):
                 st.session_state['cart'].append({"item": sel, "size": size, "qty": qty, "unit": unit, "price": price, "gst": gst_per, "base": base, "gst_amt": gst_amt, "total": total})
                 st.rerun()
             if st.session_state['cart']:
@@ -213,20 +232,27 @@ else:
                 subtotal = cdf['base'].sum()
                 total_gst = cdf['gst_amt'].sum()
                 grand = cdf['total'].sum()
-                st.metric("Grand Total (GST സഹിതം)", f"₹{grand:,.2f}")
+                st.metric("Grand Total", str(round(grand, 2)))
                 st.divider()
-                st.subheader("💰 പേയ്‌മെന്റ് എങ്ങനെ?")
-                payment_mode = st.radio("കസ്റ്റമർ എങ്ങനെ തരും?", ["💵 Cash - കാശ്", "📱 UPI / QR - GPay", "💳 Card - കാർഡ്", "📒 കടം / Credit - പിന്നെ തരും"], horizontal=True)
+                st.subheader("Payment Engane?")
+                payment_mode = st.radio("Customer Engane Tharum?", ["Cash", "UPI / QR - 【entity-GPay¦canonical_name=GPay】", "Card", "Kadam / Credit"], horizontal=True)
                 upi_paid = True
                 if "UPI" in payment_mode:
-                    st.info(f"കസ്റ്റമറോട് ഈ QR സ്കാൻ ചെയ്യാൻ പറയൂ - ₹{grand:,.2f} to {YOUR_UPI_ID}")
+                    st.info("Customer QR Scan Cheyyan Parayu")
+                    st.write(grand)
                     qr_buf = make_upi_qr(grand)
-                    st.image(qr_buf, width=230, caption=f"Pay ₹{grand:,.2f} to {YOUR_UPI_ID}")
-                    upi_paid = st.checkbox("✅ GPay വന്നു, കൺഫേം ചെയ്യുക")
-                elif "കടം" in payment_mode:
-                    st.warning("⚠️ ഇത് കടം ആയി രേഖപ്പെടുത്തും.")
-                if st.button("✅ ബിൽ സേവ് ചെയ്യുക", disabled=("UPI" in payment_mode and not upi_paid)):
-                    pm_short = "Cash" if "Cash" in payment_mode else "UPI" if "UPI" in payment_mode else "Card" if "Card" in payment_mode else "Credit"
+                    st.image(qr_buf, width=230)
+                    upi_paid = st.checkbox("【entity-GPay¦canonical_name=GPay】 Vanthu, Confirm Cheyyuka")
+                elif "Kadam" in payment_mode:
+                    st.warning("Ithu Kadam Aayi Rekhappeduthum")
+                if st.button("Bill Save Cheyyuka", disabled=("UPI" in payment_mode and not upi_paid)):
+                    pm_short = "Cash"
+                    if "UPI" in payment_mode:
+                        pm_short = "UPI"
+                    elif "Card" in payment_mode:
+                        pm_short = "Card"
+                    elif "Kadam" in payment_mode:
+                        pm_short = "Credit"
                     bill_no = datetime.now().strftime("INV-%Y%m%d-%H%M%S")
                     today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     today_d = datetime.now().strftime("%d-%m-%Y %I:%M %p")
@@ -237,69 +263,137 @@ else:
                     pdf = make_pdf(bill_no, customer if customer else "Walk-in Customer", st.session_state['name'], st.session_state['cart'], subtotal, total_gst, grand, today_d, pm_short)
                     st.session_state['last_bill'] = {"bill_no": bill_no, "pdf": pdf.getvalue(), "total": grand, "payment": pm_short}
                     st.session_state['cart'] = []
-                    st.success(f"ബിൽ പൂർത്തിയായി! {bill_no} | {pm_short} ₹{grand:,.2f} | സ്റ്റോക്ക് കുറഞ്ഞു.")
+                    st.success("Bill Poorthiyayi!")
                     st.rerun()
             if st.session_state.get('last_bill'):
                 lb = st.session_state['last_bill']
                 st.divider()
-                st.success(f"✅ അവസാന ബിൽ: {lb['bill_no']} - ₹{lb['total']:,.2f} - {lb['payment']}")
-                st.download_button("🖨️ PDF ബിൽ ഡൗൺലോഡ് / പ്രിന്റ് ചെയ്യുക", data=lb['pdf'], file_name=f"{lb['bill_no']}.pdf", mime="application/pdf")
+                st.success("Avashana Bill:")
+                st.write(lb['bill_no'])
+                st.download_button("PDF Bill Download", data=lb['pdf'], file_name=lb['bill_no'] + ".pdf", mime="application/pdf")
         else:
-            st.warning("സ്റ്റോക്ക് ഇല്ല!")
-    elif choice == "📦 സ്റ്റോക്ക് ലിസ്റ്റ്":
-        st.subheader("📦 സ്റ്റോക്ക് ലിസ്റ്റ് - ലൈവ്")
-        search = st.text_input("🔍 തിരയുക - ഉദാ: 12x15, Blue")
-        df = pd.read_sql_query("SELECT category as 'കാറ്റഗറി', item_name as 'സാധനം', size as 'സൈസ്', color as 'കളർ', gsm as 'GSM', quantity as 'സ്റ്റോക്ക്', unit as 'യൂണിറ്റ്', price as 'വില ₹', gst as 'GST %' FROM stock ORDER BY category", conn)
+            st.warning("Stock Illa!")
+    elif choice == "Stock List":
+        st.subheader("Stock List - Live")
+        search = st.text_input("Thirayuka")
+        df = pd.read_sql_query("SELECT category as Category, item_name as Sadhanam, size as Size, color as Color, gsm as GSM, quantity as Stock, unit as Unit, price as Vila, gst as GST FROM stock ORDER BY category", conn)
         if search:
-            df = df[df['സാധനം'].str.contains(search, case=False) | df['സൈസ്'].str.contains(search, case=False)]
+            df = df[df['Sadhanam'].str.contains(search, case=False) | df['Size'].str.contains(search, case=False)]
         st.dataframe(df, use_container_width=True)
-        st.metric("ആകെ സ്റ്റോക്ക്", f"{df['സ്റ്റോക്ക്'].sum():,.0f}")
-        low = df[df['സ്റ്റോക്ക്'] <= 10]
-        if not low.empty:
-            st.warning(f"⚠️ സ്റ്റോക്ക് തീരാറായി: {', '.join(low['സാധനം'].tolist())}")
-    elif choice == "➕ സ്റ്റോക്ക് ചേർക്കുക":
-        st.subheader("➕ സ്റ്റോക്ക് ചേർക്കുക - എത്ര വേണമെങ്കിലും")
-        cat = st.selectbox("കാറ്റഗറി", ["HDPE Tarpaulin", "PVC Tarpaulin", "Canvas", "Roll / Meter", "Accessories"])
-        name = st.text_input("സാധനത്തിന്റെ പേര് - ഉദാ: Tarpaulin 12x15 Blue")
-        size = st.text_input("സൈസ് - ഉദാ: 12x15 ft")
-        color = st.selectbox("കളർ", ["Blue", "Green", "White", "Black", "Orange", "Yellow", "Brown", "Silver"])
+        st.write("Aake Stock:")
+        st.write(df['Stock'].sum())
+    elif choice == "Stock Cherkkuka":
+        st.subheader("Stock Cherkkuka")
+        cat = st.selectbox("Category", ["HDPE Tarpaulin", "PVC Tarpaulin", "Canvas", "Roll / Meter", "Accessories"])
+        name = st.text_input("Sadhnathinte Peru")
+        size = st.text_input("Size")
+        color = st.selectbox("Color", ["Blue", "Green", "White", "Black", "Orange", "Yellow", "Brown", "Silver"])
         gsm = st.selectbox("GSM", ["120 GSM", "150 GSM", "200 GSM", "300 GSM", "350 GSM", "Canvas"])
-        unit = st.selectbox("യൂണിറ്റ്", ["Nos", "Meter", "Roll", "Packet", "Set"])
-        qty = st.number_input("എത്ര ചേർക്കണം?", min_value=0.5, value=10.0)
-        price = st.number_input("വില ₹ (GST ഇല്ലാതെ)", min_value=0.0, value=500.0)
+        unit = st.selectbox("Unit", ["Nos", "Meter", "Roll", "Packet", "Set"])
+        qty = st.number_input("Ethra Cherkkanam?", min_value=0.5, value=10.0)
+        price = st.number_input("Vila", min_value=0.0, value=500.0)
         gst = st.selectbox("GST %", [18.0, 12.0, 5.0, 28.0], index=0)
-        if st.button("സ്റ്റോക്കിലേക്ക് ചേർക്കുക"):
+        if st.button("Stockilekku Cherkkuka"):
             if name:
                 c.execute("SELECT quantity FROM stock WHERE item_name=?", (name,))
                 ex = c.fetchone()
                 if ex:
-                    c.execute("UPDATE stock SET quantity=?, price=?, gst=? WHERE item_name=?", (ex[0]+qty, price, gst, name))
-                    st.success(f"പഴയത് {ex[0]} + പുതിയത് {qty} = ആകെ {ex[0]+qty}")
+                    c.execute("UPDATE stock SET quantity=?, price=?, gst=? WHERE item_name=?", (ex[0] + qty, price, gst, name))
+                    st.success("Pazhaya Stock + Puthiya Stock = Koodi")
                 else:
                     c.execute("INSERT INTO stock (category, item_name, size, color, gsm, unit, quantity, price, gst) VALUES (?,?,?,?,?,?,?,?,?)", (cat, name, size, color, gsm, unit, qty, price, gst))
-                    st.success(f"'{name}' - {qty} {unit} ചേർത്തു.")
+                    st.success("Stock Chertu")
                 conn.commit()
             else:
-                st.error("പേര് കൊടുക്കുക!")
-    elif choice == "🧾 ചെലവ് ചേർക്കുക":
-        st.subheader("🧾 ഇന്നത്തെ ചെലവ്")
-        reason = st.selectbox("എന്തിനാണ് ചെലവ്?", ["ചായ / ഭക്ഷണം", "പെട്രോൾ / ഡീസൽ", "ഓട്ടോ / ലോഡിംഗ്", "കട വാടക", "കറന്റ് ബിൽ", "സ്റ്റാഫ് ശമ്പളം", "സാധനം വാങ്ങിയത്", "മറ്റുള്ളവ"])
-        custom = st.text_input("വേറെ എന്തെങ്കിലും ആണെങ്കിൽ എഴുതുക")
+                st.error("Peru Kodukkuka!")
+    elif choice == "Chelavu Cherkkuka":
+        st.subheader("Innatthe Chelavu")
+        reason = st.selectbox("Enthinan Chelavu?", ["Chaya / Bhakshanam", "Petrol / Diesel", "Auto / Loading", "Kada Vadaka", "Current Bill", "Staff Shambalam", "Sadhanam Vangiyathu", "Mattullavar"])
+        custom = st.text_input("Vere Enthelum Aanel Ezhuthuka")
         final_reason = custom if custom else reason
-        amount = st.number_input("എത്ര രൂപ?", min_value=1.0, value=100.0)
-        pay_from = st.radio("എവിടെ നിന്ന് കൊടുത്തു?", ["Cash - പെട്ടിയിൽ നിന്ന്", "UPI - GPay-ൽ നിന്ന്"], horizontal=True)
+        amount = st.number_input("Ethra Roopa?", min_value=1.0, value=100.0)
+        pay_from = st.radio("Evidunnu Koduthu?", ["Cash", "UPI - GPay"], horizontal=True)
         pay_short = "Cash" if "Cash" in pay_from else "UPI"
-        if st.button("✅ ചെലവ് സേവ് ചെയ്യുക"):
+        if st.button("Chelavu Save Cheyyuka"):
             today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             c.execute("INSERT INTO expenses (reason, amount, date, user, payment_from) VALUES (?,?,?,?,?)", (final_reason, amount, today, st.session_state['username'], pay_short))
             conn.commit()
-            st.success(f"ചെലവ് ₹{amount} സേവ് ആയി. Balance കുറഞ്ഞു.")
+            st.success("Chelavu Save Aayi")
             st.rerun()
         st.divider()
         today_str = datetime.now().strftime("%Y-%m-%d")
-        df_exp = pd.read_sql_query("SELECT reason as 'കാരണം', amount as 'തുക ₹', payment_from as 'എവിടെ നിന്ന്', user as 'എഴുതിയത്', date as 'സമയം' FROM expenses WHERE date LIKE ? ORDER BY date DESC", conn, params=(f"{today_str}%",))
+        df_exp = pd.read_sql_query("SELECT reason as Karanam, amount as Thuka, payment_from as Evidunnu, user as Ezhuthiyathu, date as Samayam FROM expenses WHERE date LIKE ? ORDER BY date DESC", conn, params=(today_str + "%",))
         st.dataframe(df_exp, use_container_width=True)
-    elif choice == "📈 റിപ്പോർട്ട്":
-        st.subheader("📈 ഇന്നത്തെ ഫൈനൽ റിപ്പോർട്ട്")
-        st.write(f"**Cash വിൽപ്പന:** ₹{cash:,.2f} | **GPay:** ₹{upi:,.2f} | **Card:** ₹{card:,.2f} | **കടം:** ₹{credit:,.2f}")
-        st.write(f"**ആകെ വിൽപ്പന:** ₹{total_sale:,.2f} | **ആകെ ചെലവ്:** ₹{total_exp:
+    elif choice == "Report":
+        st.subheader("Innatthe Final Report")
+        st.write("Cash:")
+        st.write(cash)
+        st.write("GPay:")
+        st.write(upi)
+        st.write("Card:")
+        st.write(card)
+        st.write("Kadam:")
+        st.write(credit)
+        st.write("Aake Vilpana:")
+        st.write(total_sale)
+        st.write("Aake Chelavu:")
+        st.write(total_exp)
+        st.success("Balance:")
+        st.write(balance)
+        df = pd.read_sql_query("SELECT bill_no as BillNo, customer as Customer, item_name as Sadhanam, size as Size, quantity as Alavu, total_price as Aake, payment_mode as Payment, date as Thiyathi, user as Vittayal FROM sales ORDER BY date DESC", conn)
+        if not df.empty:
+            st.dataframe(df, use_container_width=True)
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("Report Excel Aayi Download", csv, "ambay_sales.csv", "text/csv")
+        else:
+            st.info("Vilpana Illa")
+    elif choice == "User Manage":
+        st.subheader("User Manage - Owner Only")
+        st.info("Neengal Evide Aayirunthalum Ivide Ninnu Maatam")
+        st.write("Ippol Active Aayittullavar")
+        df_users = pd.read_sql_query("SELECT username as Username, name as Peru FROM users", conn)
+        st.dataframe(df_users, use_container_width=True)
+        st.divider()
+        st.write("Puthiya Aale Cherkkuka")
+        new_user = st.text_input("Puthiya Username")
+        new_name = st.text_input("Peru")
+        new_pass = st.text_input("Password", type="password")
+        if st.button("Puthiya Aale Cherkkuka"):
+            if new_user and new_pass:
+                try:
+                    c.execute("INSERT INTO users VALUES (?,?,?)", (new_user, hash_pass(new_pass), new_name))
+                    conn.commit()
+                    st.success("Puthiya Aal Chertu")
+                    st.rerun()
+                except:
+                    st.error("Ee Username Nerathe Undu!")
+            else:
+                st.error("Username + Password Kodukkuka!")
+        st.divider()
+        st.write("Password Maattuka")
+        c.execute("SELECT username FROM users ORDER BY username")
+        all_users_list = [r[0] for r in c.fetchall()]
+        sel_user_pass = st.selectbox("Aarude Password Maattanam?", all_users_list)
+        new_pass2 = st.text_input("Puthiya Password", type="password", key="pass2")
+        if st.button("Password Maattuka"):
+            if new_pass2:
+                c.execute("UPDATE users SET password=? WHERE username=?", (hash_pass(new_pass2), sel_user_pass))
+                conn.commit()
+                st.success("Password Maati")
+            else:
+                st.error("Puthiya Password Ezhuthuka!")
+        st.divider()
+        st.write("Oraale Cancel Cheyyuka")
+        st.warning("Ivide Cancel Cheythal Udan Avanu Login Cheyyaan Pattilla")
+        c.execute("SELECT username FROM users WHERE username != 'owner' ORDER BY username")
+        cancel_list = [r[0] for r in c.fetchall()]
+        if cancel_list:
+            del_user = st.selectbox("Aareyaanu Ozhivakkanam?", cancel_list)
+            if st.button("Cancel Cheyyuka"):
+                c.execute("DELETE FROM users WHERE username=?", (del_user,))
+                conn.commit()
+                st.success("Cancel Aayi")
+                st.balloons()
+                st.rerun()
+        else:
+            st.info("Cancel Cheyyaan Vere Aarum Illa")
