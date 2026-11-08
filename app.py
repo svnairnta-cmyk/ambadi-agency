@@ -85,3 +85,8 @@ users_list = [
     ("staff4", "staff123", "Staff 4"),
 ]
 for u, p, n in users_list:
+    try:
+        c.execute("INSERT INTO users VALUES (?,?,?)", (u, hash_pass(p), n))
+        conn.commit()
+    except:
+        pass
