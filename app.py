@@ -77,4 +77,11 @@ def make_pdf(bill_no, customer, staff, cart, subtotal, total_gst, grand, date_st
     doc.build(story); buffer.seek(0); return buffer
 
 # ================= 5 USERS =================
-for u,p,n in [("owner","owner123","Owner"),("staff1","staff123","Staff 1"),("staff2","staff123","Staff 2"),("staff3
+users_list = [
+    ("owner", "owner123", "Owner"),
+    ("staff1", "staff123", "Staff 1"),
+    ("staff2", "staff123", "Staff 2"),
+    ("staff3", "staff123", "Staff 3"),
+    ("staff4", "staff123", "Staff 4"),
+]
+for u, p, n in users_list:
